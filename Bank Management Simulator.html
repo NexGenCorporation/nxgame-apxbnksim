@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Bank Group - Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; background: #080c14; color: #f1f5f9; user-select: none; }
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col bg-[#080c14] text-slate-100">
+
+    <header class="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between shrink-0 z-20">
+        <div class="flex items-center gap-2">
+            <div class="p-1.5 bg-gradient-to-tr from-emerald-600 to-cyan-600 rounded-lg">
+                <i data-lucide="landmark" class="w-5 h-5 text-white"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent leading-none">APEX RESERVE BANK</h1>
+                <p class="text-[10px] text-slate-400"><span id="header-tier" class="text-emerald-400 font-medium">Tier 1 Bank</span> • <span id="header-rep">Rep: 92%</span></p>
+            </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-6 bg-slate-950 px-4 py-1.5 rounded-xl border border-slate-800 text-xs">
+            <div><span class="text-slate-400 block text-[10px]">TOTAL ASSETS</span><span id="top-assets" class="font-bold text-emerald-400">$10,000,000</span></div>
+            <div class="w-px h-6 bg-slate-800"></div>
+            <div><span class="text-slate-400 block text-[10px]">VAULT CASH</span><span id="top-vault" class="font-bold text-cyan-400">$2,500,000</span></div>
+            <div class="w-px h-6 bg-slate-800"></div>
+            <div><span class="text-slate-400 block text-[10px]">NET DAILY</span><span id="top-profit" class="font-bold text-emerald-400">+$14,250</span></div>
+            <div class="w-px h-6 bg-slate-800"></div>
+            <div><span class="text-slate-400 block text-[10px]">FED RATE</span><span id="top-cbrate" class="font-bold text-amber-400">5.25%</span></div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="text-right hidden sm:block">
+                <div id="sim-date" class="text-xs font-semibold text-slate-200">Oct 24, 2026</div>
+                <div id="sim-day" class="text-[10px] text-slate-400">Day 1</div>
+            </div>
+            <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+                <button onclick="setSpeed(0)" id="btn-sp-0" class="p-1 rounded hover:bg-slate-800 text-slate-400" title="Pause"><i data-lucide="pause" class="w-3.5 h-3.5"></i></button>
+                <button onclick="setSpeed(1)" id="btn-sp-1" class="px-2 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-bold">1x</button>
+                <button onclick="setSpeed(2)" id="btn-sp-2" class="px-2 py-0.5 rounded text-slate-400 hover:bg-slate-800">2x</button>
+                <button onclick="setSpeed(5)" id="btn-sp-5" class="px-2 py-0.5 rounded text-slate-400 hover:bg-slate-800">5x</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-56 border-r border-slate-800 bg-slate-900/50 flex flex-col justify-between shrink-0">
+            <nav class="p-3 space-y-1">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-white bg-emerald-600/20 border border-emerald-500/30">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-emerald-400"></i> Vault & Rates
+                </button>
+                <button onclick="switchTab('transactions')" id="nav-transactions" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <div class="flex items-center gap-2.5"><i data-lucide="arrow-left-right" class="w-4 h-4 text-cyan-400"></i> Wire Transfers</div>
+                    <span id="tx-badge" class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold hidden">0</span>
+                </button>
+                <button onclick="switchTab('accounts')" id="nav-accounts" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i data-lucide="users" class="w-4 h-4 text-indigo-400"></i> Accounts
+                </button>
+                <button onclick="switchTab('loans')" id="nav-loans" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <div class="flex items-center gap-2.5"><i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i> Loan Desk</div>
+                    <span id="loan-badge" class="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-bold">2</span>
+                </button>
+                <button onclick="switchTab('treasury')" id="nav-treasury" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i data-lucide="building-2" class="w-4 h-4 text-purple-400"></i> Treasury Bonds
+                </button>
+                <button onclick="switchTab('upgrades')" id="nav-upgrades" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-rose-400"></i> Upgrades
+                </button>
+            </nav>
+
+            <div class="p-3 m-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px]">
+                <div class="flex justify-between mb-1"><span class="text-slate-400">Liquidity Ratio</span><span id="liq-pct" class="font-bold text-emerald-400">28.5%</span></div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden"><div id="liq-bar" class="bg-emerald-500 h-full w-[28.5%] transition-all"></div></div>
+                <p class="text-[10px] text-slate-500 mt-1">Fed Requirement: 10.0% min</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-4 bg-[#0a0e1a] custom-scroll">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-4">
+                <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl flex items-center gap-2 text-xs">
+                    <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] rounded font-bold shrink-0">NEWS</span>
+                    <marquee id="news-ticker" class="text-slate-300">Central Bank holds key interest rate at 5.25% • Apex Bank deposit volume up +2.4% nationwide • Stock rating upgraded to OUTPERFORM.</marquee>
+                </div>
+
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold">Deposits</span>
+                        <div id="dash-deposits" class="text-lg font-bold text-slate-100 mt-1">$18,450,000</div>
+                        <div class="text-[10px] text-emerald-400 mt-1 font-semibold" id="dash-dep-rate">2.50% APY</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold">Active Loans</span>
+                        <div id="dash-loans" class="text-lg font-bold text-slate-100 mt-1">$12,800,000</div>
+                        <div class="text-[10px] text-amber-400 mt-1 font-semibold" id="dash-loan-rate">7.80% APY</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold">Vault Cash</span>
+                        <div id="dash-reserves" class="text-lg font-bold text-emerald-400 mt-1">$5,250,000</div>
+                        <div class="text-[10px] text-slate-400 mt-1">Req: $1,845,000</div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                        <span class="text-slate-400 text-[10px] uppercase font-bold">Credit Rating</span>
+                        <div class="text-lg font-bold text-indigo-400 mt-1">AA+</div>
+                        <div class="text-[10px] text-emerald-400 mt-1 font-semibold">Default Risk: 0.8%</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
+                        <h3 class="font-bold text-slate-100 text-xs flex items-center gap-1.5"><i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i> Rate Policy</h3>
+                        
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><span class="text-slate-300">Deposit APY</span><span id="val-dep-rate" class="text-emerald-400 font-bold">2.50%</span></div>
+                            <input id="slider-dep-rate" type="range" min="0.1" max="10.0" step="0.1" value="2.5" oninput="updateRates()" class="w-full accent-emerald-500 bg-slate-800 rounded">
+                        </div>
+
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs"><span class="text-slate-300">Loan Rate</span><span id="val-loan-rate" class="text-amber-400 font-bold">7.80%</span></div>
+                            <input id="slider-loan-rate" type="range" min="3.0" max="25.0" step="0.1" value="7.8" oninput="updateRates()" class="w-full accent-amber-500 bg-slate-800 rounded">
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-800 space-y-2">
+                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Emergency Cash</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="centralBankBorrow()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="landmark" class="w-3.5 h-3.5 text-amber-400"></i> +$1M Fed</button>
+                                <button onclick="injectCapital()" class="p-2 bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 text-emerald-400 rounded-lg text-xs font-semibold flex items-center justify-center gap-1"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> +$500k Cash</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-slate-100 text-xs">Asset & Deposit Growth</h3>
+                            <div class="flex items-center gap-3 text-[10px]"><span class="text-emerald-400">● Assets</span><span class="text-cyan-400">● Deposits</span></div>
+                        </div>
+                        <div class="h-48 w-full"><canvas id="financialChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: TRANSACTIONS -->
+            <div id="tab-transactions" class="hidden space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h3 class="font-bold text-slate-100 text-xs flex items-center gap-2"><i data-lucide="send" class="w-4 h-4 text-cyan-400"></i> Dispatch Wire Transfer</h3>
+                        <form onsubmit="executeTransaction(event)" class="space-y-2 text-xs">
+                            <div><label class="block text-slate-400 mb-1">Sender</label><select id="wire-sender" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></select></div>
+                            <div><label class="block text-slate-400 mb-1">Recipient</label><select id="wire-recipient" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></select></div>
+                            <div><label class="block text-slate-400 mb-1">Amount ($)</label><input type="number" id="wire-amount" value="5000" min="100" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></div>
+                            <div><label class="block text-slate-400 mb-1">Type</label><select id="wire-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"><option>ACH Standard</option><option>SWIFT Wire</option><option>Payroll Express</option></select></div>
+                            <button type="submit" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-lg transition mt-2">Execute Transfer</button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-2 mb-3">
+                            <h3 class="font-bold text-slate-100 text-xs flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i> Risk & Fraud Inspection</h3>
+                            <span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-semibold">Scanner Active</span>
+                        </div>
+                        <div id="fraud-queue-list" class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1"></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <h3 class="font-bold text-slate-100 text-xs mb-3 flex items-center gap-2"><i data-lucide="list-tree" class="w-4 h-4 text-indigo-400"></i> Interbank Settlement Ledger</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-[11px]">
+                            <thead class="bg-slate-950 text-slate-400 font-semibold">
+                                <tr><th class="p-2">Tx ID</th><th class="p-2">Time</th><th class="p-2">Sender</th><th class="p-2">Recipient</th><th class="p-2">Type</th><th class="p-2 text-right">Amount</th><th class="p-2 text-center">Status</th></tr>
+                            </thead>
+                            <tbody id="ledger-body" class="divide-y divide-slate-800 text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ACCOUNTS -->
+            <div id="tab-accounts" class="hidden space-y-4">
+                <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl">
+                    <h3 class="font-bold text-slate-100 text-xs">Depositor Base</h3>
+                    <button onclick="openModal('modal-customer')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Onboard Client</button>
+                </div>
+                <div id="customers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- TAB 4: LOAN DESK -->
+            <div id="tab-loans" class="hidden space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                        <h3 class="font-bold text-slate-100 text-xs mb-3 flex items-center gap-2"><i data-lucide="file-check" class="w-4 h-4 text-emerald-400"></i> Credit Applications</h3>
+                        <div id="loan-requests-list" class="space-y-3"></div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3 text-xs">
+                        <h3 class="font-bold text-slate-100">Portfolio Breakdown</h3>
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800"><div class="flex justify-between text-[11px] mb-1"><span>Mortgages</span><span class="text-emerald-400 font-bold">$6.5M</span></div><div class="w-full bg-slate-800 h-1 rounded-full"><div class="bg-emerald-500 h-full w-[50%]"></div></div></div>
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800"><div class="flex justify-between text-[11px] mb-1"><span>Commercial Debt</span><span class="text-cyan-400 font-bold">$4.8M</span></div><div class="w-full bg-slate-800 h-1 rounded-full"><div class="bg-cyan-500 h-full w-[38%]"></div></div></div>
+                        <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800"><div class="flex justify-between text-[11px] mb-1"><span>Personal Debt</span><span class="text-amber-400 font-bold">$1.5M</span></div><div class="w-full bg-slate-800 h-1 rounded-full"><div class="bg-amber-500 h-full w-[12%]"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: TREASURY -->
+            <div id="tab-treasury" class="hidden space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
+                        <h3 class="font-bold text-slate-100 text-xs flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-purple-400"></i> Sovereign Bond Desk</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 text-xs">
+                                <div class="flex justify-between font-bold"><span>US 1-Year Note</span><span class="text-emerald-400">4.8% APY</span></div>
+                                <p class="text-[11px] text-slate-400">Guaranteed daily yield.</p>
+                                <button onclick="buyBonds('treasury1y', 500000)" class="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold">Buy $500k</button>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 text-xs">
+                                <div class="flex justify-between font-bold"><span>AAA Muni Bond</span><span class="text-purple-400">6.5% APY</span></div>
+                                <p class="text-[11px] text-slate-400">High yield regional debt.</p>
+                                <button onclick="buyBonds('muni', 1000000)" class="w-full py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded font-bold">Buy $1M</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between text-xs">
+                        <div>
+                            <h3 class="font-bold text-slate-100 mb-2">Bond Holdings</h3>
+                            <div id="treasury-holdings-list" class="space-y-2"></div>
+                        </div>
+                        <button onclick="sellAllBonds()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg mt-3">Liquidate All to Vault</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: UPGRADES -->
+            <div id="tab-upgrades" class="hidden space-y-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                    <h3 class="font-bold text-slate-100 text-xs mb-3">Bank Infrastructure Upgrades</h3>
+                    <div id="upgrades-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal: Onboard Customer -->
+    <div id="modal-customer" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 w-full max-w-sm shadow-2xl space-y-3 text-xs">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                <h3 class="font-bold text-slate-100">Onboard New Customer</h3>
+                <button onclick="closeModal('modal-customer')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="handleCustomerOnboard(event)" class="space-y-2">
+                <div><label class="block text-slate-400 mb-1">Full Name</label><input type="text" id="cust-name" required placeholder="e.g. Elena Vance" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Account Category</label>
+                    <select id="cust-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200">
+                        <option value="Personal">Personal Savings ($10k+)</option>
+                        <option value="Corporate">Corporate Checking ($500k+)</option>
+                        <option value="HNW">High Net Worth ($1M+)</option>
+                    </select>
+                </div>
+                <div><label class="block text-slate-400 mb-1">Opening Deposit ($)</label><input type="number" id="cust-deposit" value="25000" min="500" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200"></div>
+                <button type="submit" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition mt-2">Approve Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 border border-emerald-500/50 text-slate-100 px-3 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs transition-all duration-300 transform translate-y-20 opacity-0 z-50">
+        <i id="toast-icon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <div>
+            <div id="toast-title" class="font-bold text-emerald-400">Notification</div>
+            <div id="toast-msg" class="text-slate-300 text-[11px]">Message text</div>
+        </div>
+    </div>
+
+    <script>
+        const gameState = {
+            day: 1,
+            date: new Date(2026, 9, 24),
+            speed: 1,
+            timer: null,
+            bank: {
+                capital: 5000000,
+                vaultCash: 2500000,
+                totalDeposits: 18450000,
+                totalLoans: 12800000,
+                depositRate: 2.5,
+                loanRate: 7.8,
+                centralBankRate: 5.25,
+                dailyNetIncome: 14250,
+                upgrades: { aiFraud: false, atmNetwork: false, mobileApp: false, wealthDesk: false }
+            },
+            customers: [
+                { id: "ACC-101", name: "Apex Tech Corp", type: "Corporate", balance: 4200000, creditScore: 780 },
+                { id: "ACC-102", name: "Sarah Connor", type: "Personal", balance: 85000, creditScore: 720 },
+                { id: "ACC-103", name: "Global Logistics", type: "Corporate", balance: 1850000, creditScore: 690 },
+                { id: "ACC-104", name: "Marcus Brody", type: "HNW", balance: 940000, creditScore: 810 }
+            ],
+            loanRequests: [
+                { id: "LN-801", applicant: "BioHealth Lab", amount: 1500000, purpose: "Lab Expansion", termYears: 5, rate: 8.5, creditScore: 740, risk: "Low" },
+                { id: "LN-802", applicant: "David Miller", amount: 450000, purpose: "Residential Mortgage", termYears: 30, rate: 6.8, creditScore: 710, risk: "Low" }
+            ],
+            fraudQueue: [
+                { id: "TX-9901", sender: "Offshore Shell Inc", recipient: "ACC-101", amount: 850000, reason: "Unusual Swift Origin", score: 88 }
+            ],
+            treasury: [{ id: "BOND-1", name: "US Treasury 1Y Note", principal: 1000000, yieldRate: 4.8 }],
+            history: { labels: ['Day 1'], assets: [10000000], deposits: [18450000] }
+        };
+
+        let chartInstance = null;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(type==='money'?900:(type==='alert'?250:600), audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } catch(e){}
+        }
+
+        window.onload = function() {
+            lucide.createIcons();
+            initChart();
+            renderAll();
+            startLoop();
+        };
+
+        function startLoop() {
+            if (gameState.timer) clearInterval(gameState.timer);
+            gameState.timer = setInterval(() => {
+                if (gameState.speed > 0) processTick();
+            }, 3000 / (gameState.speed || 1));
+        }
+
+        function setSpeed(sp) {
+            playSound('click');
+            gameState.speed = sp;
+            [0,1,2,5].forEach(s => {
+                const btn = document.getElementById(`btn-sp-${s}`);
+                if (btn) btn.className = s === sp ? "px-2 py-0.5 rounded bg-emerald-600/30 text-emerald-400 font-bold text-xs" : "px-2 py-0.5 rounded text-slate-400 hover:bg-slate-800 text-xs";
+            });
+            startLoop();
+        }
+
+        function processTick() {
+            gameState.day += 1;
+            gameState.date.setDate(gameState.date.getDate() + 1);
+
+            const loanEarned = (gameState.bank.totalLoans * (gameState.bank.loanRate / 100)) / 365;
+            const depositPaid = (gameState.bank.totalDeposits * (gameState.bank.depositRate / 100)) / 365;
+            const bondYield = gameState.treasury.reduce((s, b) => s + (b.principal * (b.yieldRate / 100) / 365), 0);
+
+            const net = (loanEarned + bondYield) - depositPaid;
+            gameState.bank.dailyNetIncome = net;
+            gameState.bank.vaultCash += net;
+
+            if (Math.random() < 0.5) {
+                const c = gameState.customers[Math.floor(Math.random() * gameState.customers.length)];
+                const change = (Math.random() - 0.45) * 15000;
+                c.balance = Math.max(1000, Math.round(c.balance + change));
+                gameState.bank.totalDeposits += change;
+                addLedgerEntry(`TX-${Math.floor(1000+Math.random()*9000)}`, c.name, "Automated Settlement", change > 0 ? "Deposit" : "Withdrawal", Math.abs(change), "Cleared");
+            }
+
+            if (gameState.day % 2 === 0) {
+                gameState.history.labels.push(`D${gameState.day}`);
+                gameState.history.assets.push(gameState.bank.vaultCash + gameState.bank.totalLoans);
+                gameState.history.deposits.push(gameState.bank.totalDeposits);
+                if (gameState.history.labels.length > 10) {
+                    gameState.history.labels.shift(); gameState.history.assets.shift(); gameState.history.deposits.shift();
+                }
+                if (chartInstance) chartInstance.update();
+            }
+
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('sim-date').innerText = gameState.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('sim-day').innerText = `Day ${gameState.day}`;
+
+            const assets = gameState.bank.vaultCash + gameState.bank.totalLoans;
+            document.getElementById('top-assets').innerText = fmt(assets);
+            document.getElementById('top-vault').innerText = fmt(gameState.bank.vaultCash);
+            document.getElementById('top-profit').innerText = (gameState.bank.dailyNetIncome >= 0 ? '+' : '') + fmt(gameState.bank.dailyNetIncome);
+
+            document.getElementById('dash-deposits').innerText = fmt(gameState.bank.totalDeposits);
+            document.getElementById('dash-loans').innerText = fmt(gameState.bank.totalLoans);
+            document.getElementById('dash-reserves').innerText = fmt(gameState.bank.vaultCash);
+
+            const ratio = (gameState.bank.vaultCash / gameState.bank.totalDeposits) * 100;
+            document.getElementById('liq-pct').innerText = `${ratio.toFixed(1)}%`;
+            document.getElementById('liq-bar').style.width = `${Math.min(100, ratio)}%`;
+        }
+
+        function switchTab(tab) {
+            playSound('click');
+            ['dashboard','transactions','accounts','loans','treasury','upgrades'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    el.classList.remove('hidden');
+                    nav.className = "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-white bg-emerald-600/20 border border-emerald-500/30";
+                } else {
+                    el.classList.add('hidden');
+                    nav.className = "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-200";
+                }
+            });
+        }
+
+        function updateRates() {
+            gameState.bank.depositRate = parseFloat(document.getElementById('slider-dep-rate').value);
+            gameState.bank.loanRate = parseFloat(document.getElementById('slider-loan-rate').value);
+            document.getElementById('val-dep-rate').innerText = `${gameState.bank.depositRate.toFixed(2)}%`;
+            document.getElementById('val-loan-rate').innerText = `${gameState.bank.loanRate.toFixed(2)}%`;
+            updateUI();
+        }
+
+        function executeTransaction(e) {
+            e.preventDefault();
+            const senderId = document.getElementById('wire-sender').value;
+            const recipientId = document.getElementById('wire-recipient').value;
+            const amount = parseFloat(document.getElementById('wire-amount').value);
+            const type = document.getElementById('wire-type').value;
+
+            const sender = gameState.customers.find(c => c.id === senderId);
+            if (sender && sender.balance < amount) return showToast("Declined", "Insufficient sender funds", "danger");
+
+            if (sender) sender.balance -= amount;
+            const recipient = gameState.customers.find(c => c.id === recipientId);
+            if (recipient) recipient.balance += amount;
+
+            addLedgerEntry(`TX-${Math.floor(10000+Math.random()*90000)}`, sender ? sender.name : senderId, recipient ? recipient.name : recipientId, type, amount, "Executed");
+            playSound('money');
+            showToast("Wire Sent", `Transferred ${fmt(amount)}`);
+            renderCustomers(); updateUI();
+        }
+
+        function approveFraudTx(id) {
+            const idx = gameState.fraudQueue.findIndex(f => f.id === id);
+            if (idx !== -1) {
+                const item = gameState.fraudQueue.splice(idx, 1)[0];
+                gameState.bank.vaultCash += item.amount * 0.01;
+                addLedgerEntry(item.id, item.sender, item.recipient, "Cleared Wire", item.amount, "Cleared");
+                playSound('money'); renderFraud(); showToast("Approved", `Wire cleared: ${fmt(item.amount)}`);
+            }
+        }
+
+        function rejectFraudTx(id) {
+            const idx = gameState.fraudQueue.findIndex(f => f.id === id);
+            if (idx !== -1) {
+                gameState.fraudQueue.splice(idx, 1);
+                playSound('alert'); renderFraud(); showToast("Blocked", "Suspicious wire blocked", "danger");
+            }
+        }
+
+        function renderFraud() {
+            const list = document.getElementById('fraud-queue-list');
+            if (gameState.fraudQueue.length === 0) return list.innerHTML = `<p class="text-[11px] text-slate-500 text-center py-4">Queue empty.</p>`;
+            list.innerHTML = gameState.fraudQueue.map(item => `
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/30 flex items-center justify-between text-xs">
+                    <div>
+                        <div class="font-bold text-amber-400">${item.id} <span class="text-[9px] text-rose-400">Risk: ${item.score}/100</span></div>
+                        <div class="text-[11px] text-slate-300">${item.sender} &rarr; ${item.recipient}</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <span class="font-bold text-slate-200 mr-1">${fmt(item.amount)}</span>
+                        <button onclick="rejectFraudTx('${item.id}')" class="px-2 py-1 bg-rose-600/20 text-rose-400 border border-rose-500/30 rounded text-[10px] font-bold">Block</button>
+                        <button onclick="approveFraudTx('${item.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold">Clear</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addLedgerEntry(id, sender, recipient, type, amount, status) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td class="p-2 font-mono text-slate-400">${id}</td><td class="p-2">${new Date().toLocaleTimeString()}</td><td class="p-2 font-medium">${sender}</td><td class="p-2 font-medium">${recipient}</td><td class="p-2">${type}</td><td class="p-2 text-right font-bold text-emerald-400">${fmt(amount)}</td><td class="p-2 text-center text-emerald-400 font-semibold">${status}</td>`;
+            document.getElementById('ledger-body').prepend(row);
+        }
+
+        function renderLoans() {
+            const container = document.getElementById('loan-requests-list');
+            if (gameState.loanRequests.length === 0) return container.innerHTML = `<p class="text-slate-500 text-center py-2 text-xs">No pending applications.</p>`;
+            container.innerHTML = gameState.loanRequests.map(l => `
+                <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                        <h4 class="font-bold text-slate-200">${l.applicant}</h4>
+                        <p class="text-[10px] text-slate-400">${l.purpose} • Score: ${l.creditScore}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-amber-400 mr-2">${fmt(l.amount)}</span>
+                        <button onclick="rejectLoan('${l.id}')" class="px-2 py-1 bg-slate-800 text-slate-300 rounded font-bold">Decline</button>
+                        <button onclick="approveLoan('${l.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold">Approve</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function approveLoan(id) {
+            const idx = gameState.loanRequests.findIndex(l => l.id === id);
+            if (idx !== -1) {
+                const loan = gameState.loanRequests[idx];
+                if (gameState.bank.vaultCash < loan.amount) return showToast("Error", "Insufficient vault reserves", "danger");
+                gameState.bank.vaultCash -= loan.amount;
+                gameState.bank.totalLoans += loan.amount;
+                gameState.loanRequests.splice(idx, 1);
+                playSound('money'); renderLoans(); updateUI(); showToast("Approved", `Loan issued: ${fmt(loan.amount)}`);
+            }
+        }
+
+        function rejectLoan(id) {
+            const idx = gameState.loanRequests.findIndex(l => l.id === id);
+            if (idx !== -1) { gameState.loanRequests.splice(idx, 1); renderLoans(); showToast("Declined", "Loan declined"); }
+        }
+
+        function buyBonds(type, amount) {
+            if (gameState.bank.vaultCash < amount) return showToast("Error", "Insufficient funds", "danger");
+            gameState.bank.vaultCash -= amount;
+            gameState.treasury.push({ id: `BOND-${Math.floor(100+Math.random()*900)}`, name: type === 'treasury1y' ? 'US 1Y Note' : 'AAA Muni Bond', principal: amount, yieldRate: type === 'treasury1y' ? 4.8 : 6.5 });
+            playSound('money'); renderTreasury(); updateUI(); showToast("Bond Purchased", `Acquired ${fmt(amount)}`);
+        }
+
+        function renderTreasury() {
+            document.getElementById('treasury-holdings-list').innerHTML = gameState.treasury.map(b => `
+                <div class="bg-slate-950 p-2 rounded border border-slate-800 flex justify-between">
+                    <span>${b.name} (${b.yieldRate}%)</span><span class="font-bold text-purple-400">${fmt(b.principal)}</span>
+                </div>
+            `).join('');
+        }
+
+        function sellAllBonds() {
+            let total = 0; gameState.treasury.forEach(b => total += b.principal);
+            gameState.bank.vaultCash += total; gameState.treasury = [];
+            playSound('money'); renderTreasury(); updateUI(); showToast("Liquidated", `Returned ${fmt(total)} to Vault`);
+        }
+
+        const upgradeItems = [
+            { id: "aiFraud", name: "AI Fraud Bot", cost: 250000, desc: "Auto screens suspicious wires." },
+            { id: "atmNetwork", name: "ATM Network", cost: 500000, desc: "+15% retail deposit volume." },
+            { id: "mobileApp", name: "Mobile Banking", cost: 750000, desc: "Boosts bank reputation." },
+            { id: "wealthDesk", name: "HNW Wealth Desk", cost: 1500000, desc: "Unlocks corporate accounts." }
+        ];
+
+        function renderUpgrades() {
+            document.getElementById('upgrades-grid').innerHTML = upgradeItems.map(u => {
+                const bought = gameState.bank.upgrades[u.id];
+                return `
+                    <div class="bg-slate-950 p-3 rounded-lg border ${bought ? 'border-emerald-500/50' : 'border-slate-800'} space-y-2 text-xs flex flex-col justify-between">
+                        <div>
+                            <div class="font-bold text-slate-100">${u.name}</div>
+                            <p class="text-[10px] text-slate-400 mt-1">${u.desc}</p>
+                        </div>
+                        <button onclick="buyUpgrade('${u.id}', ${u.cost})" ${bought ? 'disabled' : ''} class="w-full py-1.5 rounded font-bold text-[11px] ${bought ? 'bg-slate-800 text-slate-500' : 'bg-rose-600 text-white hover:bg-rose-500'}">
+                            ${bought ? 'Installed' : fmt(u.cost)}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function buyUpgrade(id, cost) {
+            if (gameState.bank.vaultCash < cost) return showToast("Error", "Insufficient cash", "danger");
+            gameState.bank.vaultCash -= cost; gameState.bank.upgrades[id] = true;
+            playSound('money'); renderUpgrades(); updateUI(); showToast("Installed", "Upgrade operational!");
+        }
+
+        function renderCustomers() {
+            document.getElementById('customers-grid').innerHTML = gameState.customers.map(c => `
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-1 text-xs">
+                    <div class="flex justify-between font-bold text-slate-200"><span>${c.name}</span><span class="text-emerald-400">${fmt(c.balance)}</span></div>
+                    <div class="text-[10px] text-slate-400">${c.id} • ${c.type} • Score: ${c.creditScore}</div>
+                </div>
+            `).join('');
+            populateSelects();
+        }
+
+        function handleCustomerOnboard(e) {
+            e.preventDefault();
+            const name = document.getElementById('cust-name').value;
+            const type = document.getElementById('cust-type').value;
+            const deposit = parseFloat(document.getElementById('cust-deposit').value);
+
+            gameState.customers.unshift({ id: `ACC-${Math.floor(100+Math.random()*900)}`, name, type, balance: deposit, creditScore: 720 });
+            gameState.bank.vaultCash += deposit;
+            gameState.bank.totalDeposits += deposit;
+
+            playSound('money'); closeModal('modal-customer'); renderCustomers(); updateUI(); showToast("Client Onboarded", `${name} account opened`);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function populateSelects() {
+            const opts = gameState.customers.map(c => `<option value="${c.id}">${c.name} (${fmt(c.balance)})</option>`).join('');
+            document.getElementById('wire-sender').innerHTML = opts;
+            document.getElementById('wire-recipient').innerHTML = opts + `<option value="External Reserve">External Clearing</option>`;
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: gameState.history.labels,
+                    datasets: [
+                        { label: 'Assets', data: gameState.history.assets, borderColor: '#10b981', tension: 0.3 },
+                        { label: 'Deposits', data: gameState.history.deposits, borderColor: '#06b6d4', tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderAll() {
+            renderCustomers(); renderLoans(); renderFraud(); renderTreasury(); renderUpgrades(); updateUI();
+        }
+
+        function fmt(a) { return '$' + Math.round(a).toLocaleString(); }
+
+        function showToast(title, msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-msg').innerText = msg;
+            toast.className = `fixed bottom-5 right-5 bg-slate-900 border ${type==='danger'?'border-rose-500/50 text-rose-400':'border-emerald-500/50 text-emerald-400'} px-3 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs transition-all duration-300 transform translate-y-0 opacity-100 z-50`;
+            setTimeout(() => { toast.className = toast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0'); }, 2500);
+        }
+
+        function centralBankBorrow() { gameState.bank.vaultCash += 1000000; playSound('money'); showToast("Fed Borrowed", "+$1,000,000 vault cash"); updateUI(); }
+        function injectCapital() { gameState.bank.vaultCash += 500000; gameState.bank.capital += 500000; playSound('money'); showToast("Cash Injected", "+$500,000 capital"); updateUI(); }
+    </script>
+</body>
+</html>

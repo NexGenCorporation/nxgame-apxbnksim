@@ -9,7 +9,7 @@ Part 1: Software & Code Permissions (Apache 2.0 + Boost 1.0 Hybrid)
 
 2. Grant of Patent License: Subject to the terms and conditions of this License, NexGen Corp. and each Contributor hereby grant to You a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work. If You institute patent litigation against any entity alleging that the Work constitutes direct or contributory patent infringement, then any patent licenses granted to You under this License shall terminate as of the date such litigation is filed.
 
-3. Source Code Redistribution: You may reproduce and distribute copies of the Work or Derivative Works in source code form, provided that You retain all copyright, patent, trademark, and attribution notices from the Source form of the Work, and include a copy of this License.
+3. Source Code Redistribution: You may reproduce and distribute copies of the Work or Derivative Works in source code form, provided that You retain all copyright, patent, and attribution notices from the Source form of the Work, include a copy of this License, and include the exact text "This product is licensed under the © NexGen Corp. ADPS License v1.0." with a link to https://adpslicense.nxgcorp.dpdns.org. You cannot use NexGen Corp. Trademarks.
 
 4. Compiled Binary Exemption (Boost 1.0 Clause): Unlike standard Apache 2.0, the attribution and license-reproduction requirements in Section 3 do not apply to Derivative Works distributed solely in machine-executable (compiled binary/object) form.
 
